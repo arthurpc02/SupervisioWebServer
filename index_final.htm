@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Estufa automatizada</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        
+		<script>
+		strHr = ""; //varíavel string usada durante um GET, para informar "horas" ao servidor
+		strMin = "";  //varíavel string usada durante um GET, para informar "minutos" ao servidor
+		strDur = "";  //varíavel string usada durante um GET, para informar "duração" ao servidor
+		
+		strProg1 = "";
+		strProg2 = "";
+		strProg3 = "";
+		
+		strControl = "";
+		strUmid = "";
+		strTol = "";
+		
+		strAut = "";
+		
+		var STATE_bomba = 0;
+		
+		function updatePage()  // essa função roda a cada 1 segundo, e atualiza (via AJAX) as informações da página com as informações do servidor
+		{
+			var req = new XMLHttpRequest();
+			nocache = "&nocache=" + Math.random() * 1000000;
+			
+			req.onreadystatechange = function()
+			{
+				if (req.readyState == 4)
+				{
+					if(this.status == 200)
+					{
+						if (req.responseXML != null)
+						{
+							//update do relógio:
+							document.getElementById("id_relogio_hr").innerHTML = req.responseXML.getElementsByTagName('relogio')[0].childNodes[0].nodeValue;
+							document.getElementById("id_relogio_min").innerHTML = req.responseXML.getElementsByTagName('relogio')[1].childNodes[0].nodeValue;
+							
+							//update do sensor:
+							document.getElementById("id_umidade").innerHTML = req.responseXML.getElementsByTagName('sensor')[0].childNodes[0].nodeValue;
+							document.getElementById("id_temperatura").innerHTML = req.responseXML.getElementsByTagName('sensor')[1].childNodes[0].nodeValue;
+							
+							//update do controle de umidade:
+							if(req.responseXML.getElementsByTagName('control')[0].childNodes[0].nodeValue === "1"){
+								document.getElementById("id_control_status").checked = true;
+							}
+							else{
+								document.getElementById("id_control_status").checked = false;
+							}
+							document.getElementById("id_control_umid").innerHTML = req.responseXML.getElementsByTagName('control')[1].childNodes[0].nodeValue;
+							document.getElementById("id_control_tol").innerHTML = req.responseXML.getElementsByTagName('control')[2].childNodes[0].nodeValue;
+							
+							//update da programação1:
+							if(req.responseXML.getElementsByTagName('prog1')[0].childNodes[0].nodeValue === "1"){
+								document.getElementById("id_prog1_status").checked = true;
+							}
+							else{
+								document.getElementById("id_prog1_status").checked = false;
+							}
+							document.getElementById("id_prog1_hr").innerHTML = req.responseXML.getElementsByTagName('prog1')[1].childNodes[0].nodeValue;
+							document.getElementById("id_prog1_min").innerHTML = req.responseXML.getElementsByTagName('prog1')[2].childNodes[0].nodeValue;
+							document.getElementById("id_prog1_dur").innerHTML = req.responseXML.getElementsByTagName('prog1')[3].childNodes[0].nodeValue;
+
+							//update da programação2:
+							if(req.responseXML.getElementsByTagName('prog2')[0].childNodes[0].nodeValue === "1"){
+								document.getElementById("id_prog2_status").checked = true;
+							}
+							else{
+								document.getElementById("id_prog2_status").checked = false;
+							}
+							document.getElementById("id_prog2_hr").innerHTML = req.responseXML.getElementsByTagName('prog2')[1].childNodes[0].nodeValue;
+							document.getElementById("id_prog2_min").innerHTML = req.responseXML.getElementsByTagName('prog2')[2].childNodes[0].nodeValue;
+							document.getElementById("id_prog2_dur").innerHTML = req.responseXML.getElementsByTagName('prog2')[3].childNodes[0].nodeValue;
+							
+							//update da programação3:
+							if(req.responseXML.getElementsByTagName('prog3')[0].childNodes[0].nodeValue === "1"){
+								document.getElementById("id_prog3_status").checked = true;
+							}
+							else{
+								document.getElementById("id_prog3_status").checked = false;
+							}
+							document.getElementById("id_prog3_hr").innerHTML = req.responseXML.getElementsByTagName('prog3')[1].childNodes[0].nodeValue;
+							document.getElementById("id_prog3_min").innerHTML = req.responseXML.getElementsByTagName('prog3')[2].childNodes[0].nodeValue;
+							document.getElementById("id_prog3_dur").innerHTML = req.responseXML.getElementsByTagName('prog3')[3].childNodes[0].nodeValue;							
+							
+							//update bomba
+							if(req.responseXML.getElementsByTagName('bomba')[0].childNodes[0].nodeValue == "1")
+							{
+								document.getElementById("id_bomba").innerHTML = "Bomba ligada";
+								document.getElementById("id_bomba").style.color='green';
+								STATE_bomba = 1;
+							}
+							else
+							{
+								document.getElementById("id_bomba").innerHTML = "Bomba desligada";
+								document.getElementById("id_bomba").style.color='black';
+								STATE_bomba = 0;
+							}
+							
+							//update automatico
+							if(req.responseXML.getElementsByTagName('automatico')[0].childNodes[0].nodeValue == "1")
+							{
+								document.getElementById("id_automatico").checked = true;
+							}
+							else
+							{
+								document.getElementById("id_manual").checked = true;
+							}
+							
+							
+						}
+						else
+						{
+							console.log("req.responseXML é nulo.");
+						}
+					}
+					else
+					{
+						console.log("req.status is not 200.");
+					}
+				}
+			}
+			req.open("GET", "uP=" + nocache, true);
+		    req.send();
+			strProg1 = "";
+			setTimeout('updatePage()', 2000);   // faz a função rodar a cada 2 segundo
+		}
+		
+		function setTime()   
+		{
+			strHr = "&hr=" + document.getElementById("id_hora").value;
+			strMin = "&mn=" + document.getElementById("id_minutos").value;
+			document.getElementById("id_hora").value = "";
+			document.getElementById("id_minutos").value = "";
+			
+			var req = new XMLHttpRequest();
+			nocache = "&nocache=" + Math.random() * 1000000;
+			
+			req.open("GET", "sT=" + strHr + strMin + nocache, true);
+		    req.send();
+			
+			strHr = "";
+			strMin = "";
+		}
+			
+		function setProg1()
+		{
+			strHr = "&hr=" + document.getElementById("id_input_prog1_hr").value;
+			strMin = "&mn=" + document.getElementById("id_input_prog1_min").value;
+			strDur = "&dr=" + document.getElementById("id_input_prog1_dur").value;
+			document.getElementById("id_input_prog1_hr").value = "";
+			document.getElementById("id_input_prog1_min").value = "";
+			document.getElementById("id_input_prog1_dur").value = "";
+			
+			var req = new XMLHttpRequest();
+			nocache = "&nocache=" + Math.random() * 1000000;
+			
+			req.open("GET", "sP1=" + strHr + strMin + strDur + nocache, true);
+		    req.send();
+			
+			strHr = "";
+			strMin = "";
+		}
+		
+		function setProg2()
+		{
+			strHr = "&hr=" + document.getElementById("id_input_prog2_hr").value;
+			strMin = "&mn=" + document.getElementById("id_input_prog2_min").value;
+			strDur = "&dr=" + document.getElementById("id_input_prog2_dur").value;
+			document.getElementById("id_input_prog2_hr").value = "";
+			document.getElementById("id_input_prog2_min").value = "";
+			document.getElementById("id_input_prog2_dur").value = "";
+			
+			var req = new XMLHttpRequest();
+			nocache = "&nocache=" + Math.random() * 1000000;
+			
+			req.open("GET", "sP2=" + strHr + strMin + strDur + nocache, true);
+		    req.send();
+			
+			strHr = "";
+			strMin = "";
+		}
+		
+		function setProg3()
+		{
+			strHr = "&hr=" + document.getElementById("id_input_prog3_hr").value;
+			strMin = "&mn=" + document.getElementById("id_input_prog3_min").value;
+			strDur = "&dr=" + document.getElementById("id_input_prog3_dur").value;
+			document.getElementById("id_input_prog3_hr").value = "";
+			document.getElementById("id_input_prog3_min").value = "";
+			document.getElementById("id_input_prog3_dur").value = "";
+			
+			var req = new XMLHttpRequest();
+			nocache = "&nocache=" + Math.random() * 1000000;
+			
+			req.open("GET", "sP3=" + strHr + strMin + strDur + nocache, true);
+		    req.send();
+			
+			strHr = "";
+			strMin = "";
+		}
+		
+		function setControl()
+		{
+			strUmid = "&vlU=" + document.getElementById("id_input_control_umid").value;
+			strTol = "&vlT=" + document.getElementById("id_input_control_tol").value;
+			
+			document.getElementById("id_input_control_umid").value = "";
+			document.getElementById("id_input_control_tol").value = "";
+			
+			var req = new XMLHttpRequest();
+			nocache = "&nocache=" + Math.random() * 1000000;
+			
+			req.open("GET", "hC=" + strUmid + strTol + nocache, true);
+		    req.send();
+			
+			strUmid = "";
+			strTol = "";
+		
+		}
+		
+		function getStatuses()
+		{
+		
+			var req = new XMLHttpRequest();
+			nocache = "&nocache=" + Math.random() * 1000000;
+
+			if (document.getElementById("id_control_status").checked) {
+				strControl = "&stC=1";
+			}
+			else {
+				strControl = "&stC=0";
+			}
+			if (document.getElementById("id_prog1_status").checked) {
+				strProg1 = "&st1=1";
+			}
+			else {
+				strProg1 = "&st1=0";
+			}
+			if (document.getElementById("id_prog2_status").checked) {
+				strProg2 = "&st2=1";
+			}
+			else {
+				strProg2 = "&st2=0";
+			}
+			if (document.getElementById("id_prog3_status").checked) {
+				strProg3 = "&st3=1";
+			}
+			else {
+				strProg3 = "&st3=0";
+			}
+			
+			req.open("GET", "gS=" + strControl + strProg1 + strProg2 + strProg3 + nocache, true);
+		    req.send();
+			
+			strControl = "";			
+			strProg1 = "";
+			strProg2 = "";
+			strProg3 = "";
+		}
+		
+		function hideShow()
+		{
+			if(document.getElementById("id_control_status").checked === true)
+			{
+				document.getElementById("id_control_div").style.display = "block";
+			}
+			else
+			{
+				document.getElementById("id_control_div").style.display = "none";
+			}
+			
+			if(document.getElementById("id_prog1_status").checked === true)
+			{
+				document.getElementById("id_prog1_div").style.display = "block";
+			}
+			else
+			{
+				document.getElementById("id_prog1_div").style.display = "none";
+			}
+			
+			if(document.getElementById("id_prog2_status").checked === true)
+			{
+				document.getElementById("id_prog2_div").style.display = "block";
+			}
+			else
+			{
+				document.getElementById("id_prog2_div").style.display = "none";
+			}
+			
+			if(document.getElementById("id_prog3_status").checked === true)
+			{
+				document.getElementById("id_prog3_div").style.display = "block";
+			}
+			else
+			{
+				document.getElementById("id_prog3_div").style.display = "none";
+			}
+		}
+		
+		function automatico()
+		{
+			var req = new XMLHttpRequest();
+			nocache = "&nocache=" + Math.random() * 1000000;
+			
+
+			if(document.getElementById("id_automatico").checked === true)
+			{
+				strAut = "&stA=1";
+			}
+			else
+			{
+				strAut = "&stA=0";
+			}
+			req.open("GET", "aT=" + strAut + nocache, true);
+			req.send();
+			
+			strAut = "";
+		}
+		
+</script>
+		
+
+	<style>
+		.IO_box {
+			float: left;
+			margin: 0 20px 20px 0;
+			border: 1px solid blue;
+			padding: 0 5px 5px 5px;
+			width: 150px;
+		}
+		.BOX_program {
+			float: left;
+			margin: 0 20px 20px 0;
+			border: 1px solid green;
+			padding: 0 5px 5px 5px;
+			width: 150px;
+		}
+		.BOX_invisible {
+			float: left;
+			margin: 0 20px 20px 0;
+			padding: 0 5px 5px 5px;
+			width: 160px;
+		}
+		h1 {
+			font-size: 120%;
+			color: blue;
+			margin: 0 0 10px 0;
+		}
+		h2 {
+			font-size: 90%;
+			color: #5734E6;
+			margin: 5px 0 5px 0;
+		}
+		h3 {
+			font-size: 85%;
+			margin: 5px 0 5px 0;
+		}
+		p, form, button, input, legend, span {
+			font-size: 85%;
+			color: #252525;
+		}
+
+	</style>
+    </head>
+    <body onload="updatePage();hideShow();">
+        <h1>Controle da estufa</h1>
+		
+			<div class="IO_box" style="clear: left;">
+				<h2>Sensor</h2>
+				<p>Umidade: <span id="id_umidade">31</span> %RH</p>
+				<p>Temperatura: <span id="id_temperatura">28</span> °C</p>
+				<h2>Bomba:</h2>
+				<button type="button" id="id_bomba" onclick="updatePage()" style="padding: 15px 32px;;font-size: 100%;">Bomba desligada</button><br /><br />
+			</div>
+		
+			<div class="IO_box">
+				<h2>Rel&oacutegio</h2>
+				<p><span id="id_relogio_hr">8</span>:<span id="id_relogio_min">29</span></p>
+					<div>
+						<fieldset>
+							<legend>Ajustar rel&oacutegio</legend>
+							<input type="text" id="id_hora" name="hr" style="width:20px">:
+							<input type="text" id="id_minutos" name="mn" style="width:20px"><br>
+							<button onclick="setTime()">alterar</button>
+						</fieldset>
+					</div>
+			</div>
+			
+			<div class="IO_box">
+				<h2>Modo de operação</h2>
+				<input type="radio" name="name_automatico" id="id_automatico" value="1" onclick="automatico()">Automático<br>
+				<input type="radio" name="name_automatico" id="id_manual" value="0" onclick="automatico()"> Manual<br />
+			</div>
+			
+			<div class="BOX_program" style="clear: left; width: 780px;">
+			<h2 style="color: #008000; font-size: 95%;">Funções automáticas: </h2>
+				
+				<div class="BOX_invisible">
+					<h2 style="color: #008000;"><input id="id_control_status" onclick="getStatuses(); hideShow();" type="checkbox">Controle de Umidade</h2>
+					<div id="id_control_div" class="BOX_program">
+						<p>Umidade mínima: <span id="id_control_umid">55</span> %</p>
+						<p>tolerância(+/-): <span id="id_control_tol">5</span> %</p>
+						<fieldset>
+							<legend>alterar:</legend>
+							<p>Umidade maior que:</p>
+							<input type="text" id="id_input_control_umid" style="width:20px">
+							<p>tolerancia (+/-):</p>
+							<input type="text" id="id_input_control_tol" style="width:20px"><br>
+							<button onclick="setControl()">alterar</button>
+						</fieldset>
+					</div>
+				</div>
+				
+				<div class="BOX_invisible">
+					<h2 style="color: #008000;"><input id="id_prog1_status" onclick="getStatuses(); hideShow();" type="checkbox">Programação 1</h2>
+					<div id="id_prog1_div" class="BOX_program">
+						<p>Marcado para: <span id="id_prog1_hr">16</span>:<span id="id_prog1_min">30</span></p>
+						<p>duração:<span id="id_prog1_dur">5</span></p>
+						<fieldset>
+							<legend>marcar hora:</legend>
+							<input type="text" id="id_input_prog1_hr" style="width:20px">:
+							<input type="text" id="id_input_prog1_min" style="width:20px"><br>
+							<p>duração(em minutos): <input type="text" id="id_input_prog1_dur" style="width:20px"><br>
+							<button onclick="setProg1()">marcar</button>
+						</fieldset>
+					</div>
+				</div>
+				
+				<div class="BOX_invisible">
+					<h2 style="color: #008000;"><input id="id_prog2_status" onclick="getStatuses(); hideShow();" type="checkbox">Programação 2</h2>
+					<div id="id_prog2_div" class="BOX_program">
+						<p>Marcado para: <span id="id_prog2_hr">9</span>:<span id="id_prog2_min">30</span></p>
+						<p>duração:<span id="id_prog2_dur">10</span></p>
+						<fieldset>
+							<legend>marcar hora:</legend>
+							<input type="text" id="id_input_prog2_hr" style="width:20px">:
+							<input type="text" id="id_input_prog2_min" style="width:20px"><br>
+							<p>duração(em minutos): <input type="text" id="id_input_prog2_dur" style="width:20px"><br>
+							<button onclick="setProg2()">marcar</button>
+						</fieldset>
+					</div>
+				</div>
+				
+				<div class="BOX_invisible">
+					<h2 style="color: #008000;"><input id="id_prog3_status" onclick="getStatuses(); hideShow();" type="checkbox">Programação 3</h2>
+					<div id="id_prog3_div" class="BOX_program">
+						<p>Marcado para: <span id="id_prog3_hr">....</span>:<span id="id_prog3_min">....</span></p>
+						<p>duração:<span id="id_prog3_dur">....</span></p>
+						<fieldset>
+							<legend>marcar hora:</legend>
+							<input type="text" id="id_input_prog3_hr" style="width:20px">:
+							<input type="text" id="id_input_prog3_min" style="width:20px"><br>
+							<p>duração(em minutos): <input type="text" id="id_input_prog3_dur" style="width:20px"><br>
+							<button onclick="setProg3()">marcar</button>
+						</fieldset>
+					</div>
+				</div>
+			</div>
+			
+    </body>
+</html>
+
+
+
+
+
